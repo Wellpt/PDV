@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Logger, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { OrderService } from 'src/Services/order.service';
 import { Order } from '@prisma/client';
@@ -13,19 +13,30 @@ export class OrderController {
   @ApiOperation({ summary: 'Cria um novo pedido'})
   async createOrder(
     @Body('productId') productId: number,
-    @Body('quantity') quantity: number
+    @Body('quantity') quantity: number,
+    @Body('status') status: string
   ): Promise < { message: string} > {
-    const order = await this.orderService.createOrder(productId, quantity);
+    const order = await this.orderService.createOrder(productId, quantity, status);
     const product = await this.orderService.getProductById(productId);
-    Logger.log(`Pedido criado com: ${productId} quantidade de: ${quantity}`);
+    Logger.log(`Pedido criado com: ${productId} quantidade de: ${quantity} e com status: ${status}`);
 
-    return { message: `Pedido concluido, estoque atualizado para o produto ${product.name}, estoque atual ${product.stock}` };
+    return { message: 
+      `Pedido concluido, estoque atualizado para o produto 
+      ${product.name}, o pedido esta com status: 
+      ${order.status}, estoque atual 
+      ${product.stock}` 
+    };
   }
 
   @Get()
-  @ApiOperation({ summary: 'Retorna todos os pedidos'})
-  async getOrders(): Promise < { orders: Order[], totalBalance: number } > {
-    return this.orderService.getOrders();
+  @ApiOperation({ 
+    summary: 'Retorna todos os pedidos ou filtrado por periodo, dia, semana, e mes.'})
+  async getOrders(
+    @Query('dataInicio') dataInicio?: string,
+    @Query('dataFinal') dataFinal?: string,
+    @Query('periodo') periodo?: 'dia' | 'semana' | 'mes'
+  ): Promise < { orders: Order[], totalBalance: number } > {
+    return this.orderService.getOrders(dataInicio, dataFinal, periodo);
   }
 
   @Get(':id')
