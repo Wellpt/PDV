@@ -12,9 +12,13 @@ export class ProductController {
     @Post()
     @ApiOperation({ summary: 'Cria um novo produto' })
 
-    async createProduct(@Body() data: CreateProductDto): Promise < Product > {
+    async createProduct(@Body() data: CreateProductDto): Promise < {message: string, product: Product} > {
         Logger.log(data);
-        return this.productService.createProduct(data);
+        const product = await this.productService.createProduct(data);
+        return {
+            message: `Produto criado com sucesso`,
+            product,
+        }
     }
 
     @Get()
