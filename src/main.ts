@@ -7,7 +7,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.useGlobalGuards(app.get(JwtAuthGuard))
+  // app.useGlobalGuards(app.get(JwtAuthGuard))
 
   // Configuração do Swagger
   const options = new DocumentBuilder()
