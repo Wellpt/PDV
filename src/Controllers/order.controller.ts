@@ -1,3 +1,5 @@
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'
 import { Controller, Get, Post, Body, Param, Logger, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { OrderService } from 'src/Services/order.service';
@@ -7,6 +9,11 @@ import { Order } from '@prisma/client';
 @ApiTags('orders')
 @Controller('orders')
 export class OrderController {
+  @UseGuards(JwtAuthGuard) // protegendo com JWT
+  @Get()
+  findAll() {
+    return "Essa rota esta protegida e requer um token JWT."
+  }
   constructor(private readonly orderService: OrderService) { }
 
   @Post()
