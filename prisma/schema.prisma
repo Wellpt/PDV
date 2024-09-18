@@ -11,9 +11,9 @@ model Product {
   id          Int     @id @default(autoincrement())
   name        String
   price       Float
+  description String
   stock       Int
-  description String?
-  orders      Order[] @relation("ProductOrders") // Relacionamento com Order
+  orders      Order[] @relation("ProductOrders") // Relação com Orders
 }
 
 model Order {
