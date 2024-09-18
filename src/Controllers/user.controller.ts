@@ -3,6 +3,7 @@ import { UserService } from '../Services/user.service'
 import { CreateUserDto } from 'src/Dtos/create-user.dto';
 import { ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { User } from '@prisma/client';
 
 @Controller ('users')
 export class UserController {
@@ -14,6 +15,14 @@ export class UserController {
     async register(@Body() createUserDto: CreateUserDto) {
         const { email, password } = createUserDto
         return this.userService.createUser(createUserDto);
+    }
+
+    // rota para buscar todos os usuarios
+    @Get()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Busca todos os Usuarios'})
+    async findAll(): Promise <User [] > {
+        return this.userService.getUsers()
     }
 
     // rota para buscar usuario pelo username
