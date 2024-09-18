@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { Product, Order } from '@prisma/client';
-import * as dayjs from 'dayjs'
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class OrderService {
@@ -18,7 +18,7 @@ export class OrderService {
     // Criar o pedido
     const order = await this.prisma.order.create({
       data: {
-        productId,
+        product: { connect: { id: productId } }, // Conectando com o produto
         quantity,
         totalPrice: product.price * quantity,
         status,
@@ -45,83 +45,83 @@ export class OrderService {
     dataInicio?: string,
     dataFinal?: string,
     periodo ?: 'dia' | 'semana' | 'mes'
-  ): Promise<{ orders: Order[], totalBalance: number }> {
+  ): Promise<{ orders: any[], totalBalance: number }> {
 
-    // Se o 'period' for fornecido, definir startDate e endDate automaticamente
+    // Se o 'periodo' for fornecido, definir dataInicio e dataFinal automaticamente
     if (periodo) {
       const today = dayjs();
 
       switch (periodo) {
         case 'dia':
           dataInicio = today.startOf('day').toISOString();
-          dataFinal = today.endOf('day').toISOString()
+          dataFinal = today.endOf('day').toISOString();
           break;
         case 'semana':
           dataInicio = today.startOf('week').toISOString();
-          dataFinal = today.endOf('week').toISOString()
+          dataFinal = today.endOf('week').toISOString();
           break;
         case 'mes':
           dataInicio = today.startOf('month').toISOString();
-          dataFinal = today.endOf('month').toISOString()
+          dataFinal = today.endOf('month').toISOString();
           break;
       }
     }
 
-    // filtrar os pedidos com base no intervalo de datas, se fornecido
+    // Filtros de data, se fornecidos
     const filters: any = {};
     if (dataInicio && dataFinal) {
       filters.createdAt = {
         gte: new Date(dataInicio),
-        lte: new Date(dataFinal)
+        lte: new Date(dataFinal),
       };
     }
+
+    // Buscar pedidos com produto relacionado
     const orders = await this.prisma.order.findMany({
       where: filters,
-        include: {
-            product: true, // Inclui o produto relacionado para pegar o preço unitario
-        },
+      include: {
+        product: true, // Inclui o produto para acessar o preço
+      },
     });
 
-    // Calcula o balanço total e formata os pedidos
+    // Formatar os pedidos e calcular o balanço total
     const formattedOrders = orders.map(order => ({
-        id: order.id,
-        productId: order.productId,
-        unitPrice: order.product.price, // Adiciona o preço diretamente
-        quantity: order.quantity,
-        totalPrice: order.totalPrice,
-        status: order.status,
-        createdAt: order.createdAt,
+      id: order.id,
+      productId: order.product.id, // Usando o relacionamento para pegar o ID do produto
+      unitPrice: order.product.price, // Adiciona o preço diretamente
+      quantity: order.quantity,
+      totalPrice: order.totalPrice,
+      status: order.status,
+      createdAt: order.createdAt,
     }));
 
     const totalBalance = formattedOrders.reduce((acumulador, order) => acumulador + order.totalPrice, 0);
 
     return { orders: formattedOrders, totalBalance };
-}
+  }
 
   // Método para buscar pedido pelo ID
   async getOrderById(id: number): Promise<any> {
     const order = await this.prisma.order.findUnique({
-        where: { id },
-        include: {
-            product: {
-                select: { price: true } // Apenas o campo price
-            },
-        },
+      where: { id },
+      include: {
+        product: true, // Inclui o produto para acessar o preço
+      },
     });
 
     if (!order) {
-        throw new NotFoundException(`Pedido com ID ${id} não encontrado`);
+      throw new NotFoundException(`Pedido com ID ${id} não encontrado.`);
     }
 
     // Retorna a ordem com o preço unitário diretamente
     return {
-        id: order.id,
-        productId: order.productId,
-        unitPrice: order.product.price, // Preço diretamente na ordem
-        quantity: order.quantity,
-        totalPrice: order.totalPrice,
-        status: order.status,
-        createdAt: order.createdAt,
+      id: order.id,
+      productId: order.product.id, // Pega o ID do produto diretamente da relação
+      unitPrice: order.product.price, // Preço diretamente na ordem
+      quantity: order.quantity,
+      totalPrice: order.totalPrice,
+      status: order.status,
+      createdAt: order.createdAt,
     };
-}
+  }
 }
