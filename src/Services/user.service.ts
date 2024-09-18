@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from 'src/Dtos/create-user.dto';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class UserService {
@@ -33,6 +34,9 @@ export class UserService {
         password: hashedPassword,
       },
     });
+  }
+  async getUsers() : Promise<User[] > {
+    return this.prisma.user.findMany()
   }
 
   // Método para buscar usuário pelo username
