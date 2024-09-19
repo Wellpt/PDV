@@ -5,22 +5,27 @@ import * as dayjs from 'dayjs'
 
 @Injectable()
 export class OrderService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   // Método para criar o pedido e atualizar o estoque
-  async createOrder(productId: number, quantity: number, status: string): Promise<Order> {
-    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+  async createOrder(products: { productName: string, quantity: number }[], status: string): Promise<{ totalPrice: number, status: string}> {
+    let totalPrice = 0;
     
-    if (!product) {
-      throw new NotFoundException(`Produto com ID ${productId} não encontrado.`);
+    for (const productInfo of products) {
+      const product = await this.prisma.product.findFirst({ 
+        where: { name: productInfo.productName } 
+      });
+
+      if (!product) {
+        throw new NotFoundException(`Produto com ID ${productInfo.productName} não encontrado.`);      
     }
 
-    // Criar o pedido
-    const order = await this.prisma.order.create({
+    // Criar o pedido para cada produto
+    await this.prisma.order.create({
       data: {
-        productId,
-        quantity,
-        totalPrice: product.price * quantity,
+        productId: product.id,
+        quantity: productInfo.quantity,
+        totalPrice: product.price * productInfo.quantity,
         status,
         createdAt: new Date(),
       },
@@ -28,24 +33,26 @@ export class OrderService {
 
     // Atualizar o estoque
     await this.prisma.product.update({
-      where: { id: productId },
-      data: { stock: product.stock - quantity },
+      where: { id: product.id },
+      data: { stock: product.stock - productInfo.quantity },
     });
 
-    return order;
+    totalPrice += product.price * productInfo.quantity;
   }
+  return { totalPrice, status };
+}
 
-  // Método para buscar o produto pelo ID
-  async getProductById(id: number): Promise<Product> {
-    return this.prisma.product.findUnique({ where: { id } });
+  // Método para buscar o produto pelo Nome
+  async getProductByName(name: string): Promise<Product> {
+    return this.prisma.product.findFirst({ where: { name } });
   }
 
   // Método para obter pedidos e o balanço total
   async getOrders(
     dataInicio?: string,
     dataFinal?: string,
-    periodo ?: 'dia' | 'semana' | 'mes'
-  ): Promise<{ orders: Order[], totalBalance: number }> {
+    periodo?: 'dia' | 'semana' | 'mes'
+  ): Promise<{ orders: any[], totalBalance: number }> {
 
     // Se o 'period' for fornecido, definir startDate e endDate automaticamente
     if (periodo) {
@@ -77,51 +84,49 @@ export class OrderService {
     }
     const orders = await this.prisma.order.findMany({
       where: filters,
-        include: {
-            product: true, // Inclui o produto relacionado para pegar o preço unitario
-        },
+      include: {
+        product: true, // Inclui o produto relacionado para pegar o preço unitario
+      },
     });
 
     // Calcula o balanço total e formata os pedidos
     const formattedOrders = orders.map(order => ({
-        id: order.id,
-        productId: order.productId,
-        unitPrice: order.product.price, // Adiciona o preço diretamente
-        quantity: order.quantity,
-        totalPrice: order.totalPrice,
-        status: order.status,
-        createdAt: order.createdAt,
+      id: order.id,
+      productId: order.product.name,
+      unitPrice: order.product.price, // Adiciona o preço diretamente
+      quantity: order.quantity,
+      totalPrice: order.totalPrice,
+      status: order.status,
+      createdAt: order.createdAt,
     }));
 
     const totalBalance = formattedOrders.reduce((acumulador, order) => acumulador + order.totalPrice, 0);
 
     return { orders: formattedOrders, totalBalance };
-}
+  }
 
   // Método para buscar pedido pelo ID
   async getOrderById(id: number): Promise<any> {
     const order = await this.prisma.order.findUnique({
-        where: { id },
-        include: {
-            product: {
-                select: { price: true } // Apenas o campo price
-            },
-        },
+      where: { id },
+      include: {
+        product: true,
+      },
     });
 
     if (!order) {
-        throw new NotFoundException(`Pedido com ID ${id} não encontrado`);
+      throw new NotFoundException(`Pedido com ID ${id} não encontrado`);
     }
 
     // Retorna a ordem com o preço unitário diretamente
     return {
-        id: order.id,
-        productId: order.productId,
-        unitPrice: order.product.price, // Preço diretamente na ordem
-        quantity: order.quantity,
-        totalPrice: order.totalPrice,
-        status: order.status,
-        createdAt: order.createdAt,
+      id: order.id,
+      productId: order.product.name,
+      unitPrice: order.product.price, // Preço diretamente na ordem
+      quantity: order.quantity,
+      totalPrice: order.totalPrice,
+      status: order.status,
+      createdAt: order.createdAt,
     };
-}
+  }
 }
