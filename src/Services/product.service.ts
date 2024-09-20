@@ -27,10 +27,10 @@ export class ProductService {
         });
     }
 
-    async updateProductStock(id: number, stock: number): Promise<Product> {
+    async updateProduct(id: number, updateData: { name?: string; price?: number; description?: string; stock?: number }): Promise<Product> {
         return this.prisma.product.update({
-            where: { id: id },
-            data: { stock }
+            where: { id },
+            data: updateData, // Atualiza apenas os campos fornecidos
         });
     }
     

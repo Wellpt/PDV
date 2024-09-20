@@ -13,7 +13,7 @@ export class UserController {
     @Post('register')
     @ApiOperation({ summary: 'Cria novo usuario'})
     async register(@Body() createUserDto: CreateUserDto) {
-        const { email, password } = createUserDto
+        const { } = createUserDto
         return this.userService.createUser(createUserDto);
     }
 

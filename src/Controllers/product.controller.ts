@@ -44,19 +44,38 @@ export class ProductController {
         const numericId = parseInt(id, 10); // Converte a string 'id' para número
         return this.productService.getProductById(numericId);
     }
-    @Patch(':id/stock')
-    @UseGuards(JwtAuthGuard) // Prote
-    @ApiOperation({ summary: 'Atualiza o estoque de um produto'})
-    async updateStock(
+    @Patch (':id')
+    @UseGuards(JwtAuthGuard) // Proteção com JWT
+    @ApiOperation({ summary: 'Atualiza um produto'}) // documentação com swagger
+    async updateProduct (
         @Param('id') id: string,
-        @Body('stock') stock: number
-    ): Promise < { message: string; product: Product } > {
-        const numericId = parseInt(id, 10); // Converte a string 'id' para número
-        const updateProduct = await this.productService.updateProductStock(numericId, stock);
+        @Body() updateData: { name?: string; price?: number; description?: string; stock?: number}
+    ): Promise<{ message: string; product: Product }> {
+        const numericId = parseInt(id, 10); // converte ID que vem string para numero
 
+        const updateProduct = await this.productService.updateProduct(numericId, updateData);
+    
         return {
-            message: 'Estoque atualizado com sucesso',
+            message: 'Produto atualizado com sucesso',
             product: updateProduct
         }
+    
     }
+
+
+    // @Patch(':id/stock')
+    // @UseGuards(JwtAuthGuard) // Prote
+    // @ApiOperation({ summary: 'Atualiza o estoque de um produto'})
+    // async updateStock(
+    //     @Param('id') id: string,
+    //     @Body('stock') stock: number
+    // ): Promise < { message: string; product: Product } > {
+    //     const numericId = parseInt(id, 10); // Converte a string 'id' para número
+    //     const updateProduct = await this.productService.updateProductStock(numericId, stock);
+
+    //     return {
+    //         message: 'Estoque atualizado com sucesso',
+    //         product: updateProduct
+    //     }
+    // }
 }
