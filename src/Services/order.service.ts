@@ -1,44 +1,65 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { Product, Order } from '@prisma/client';
-import * as dayjs from 'dayjs'
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class OrderService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  // Método para criar o pedido e atualizar o estoque
-  async createOrder(products: { productName: string, quantity: number }[], status: string): Promise<{ totalPrice: number, status: string}> {
+  // Método para criar o pedido com múltiplos itens e atualizar o estoque
+  async createOrder(products: { productName: string, quantity: number }[], status: string): Promise<{ totalPrice: number, status: string }> {
     let totalPrice = 0;
+
+    // Verifica e calcula o preço total antes de criar o pedido
+    const orderItems = await Promise.all(products.map(async (productInfo) => {
+      const product = await this.prisma.product.findFirst({ where: { name: productInfo.productName } });
+
     
-    for (const productInfo of products) {
-      const product = await this.prisma.product.findFirst({ 
-        where: { name: productInfo.productName } 
-      });
+    // for (const productInfo of products) {
+    //   const product = await this.prisma.product.findFirst({ 
+    //     where: { name: productInfo.productName } 
+    //   });
 
       if (!product) {
         throw new NotFoundException(`Produto com ID ${productInfo.productName} não encontrado.`);      
     }
 
-    // Criar o pedido para cada produto
-    await this.prisma.order.create({
+    totalPrice += product.price * productInfo.quantity;
+
+    return {
+      productid: product.id,
+      quantity: productInfo.quantity,
+      unitPrice: product.price
+    };
+  }));
+
+    // Criar o pedido com todos os itens
+    const order = await this.prisma.order.create({
       data: {
-        productId: product.id,
-        quantity: productInfo.quantity,
-        totalPrice: product.price * productInfo.quantity,
         status,
+        totalPrice,
         createdAt: new Date(),
+        items: {
+          create: orderItems.map(item => ({
+            productId: item.productid,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+          })),
+        },
+      },
+      include: {
+        items: true, 
       },
     });
 
-    // Atualizar o estoque
-    await this.prisma.product.update({
-      where: { id: product.id },
-      data: { stock: product.stock - productInfo.quantity },
-    });
-
-    totalPrice += product.price * productInfo.quantity;
-  }
+    // Atualizar o estoque para cada produto
+    await Promise.all(orderItems.map(async (item) => {
+      await this.prisma.product.update({
+        where: { id: item.productid },
+        data: { stock: { decrement: item.quantity} }, // diminui o estoque do produto 
+      });
+    }));
   return { totalPrice, status };
 }
 
@@ -53,7 +74,6 @@ export class OrderService {
     dataFinal?: string,
     periodo?: 'dia' | 'semana' | 'mes'
   ): Promise<{ orders: any[], totalBalance: number }> {
-
     // Se o 'period' for fornecido, definir startDate e endDate automaticamente
     if (periodo) {
       const today = dayjs();
@@ -85,16 +105,22 @@ export class OrderService {
     const orders = await this.prisma.order.findMany({
       where: filters,
       include: {
-        product: true, // Inclui o produto relacionado para pegar o preço unitario
+        items: {
+          include: {
+            product: true, // Inclui o produto relacionado
+          },
+        },
       },
     });
 
     // Calcula o balanço total e formata os pedidos
     const formattedOrders = orders.map(order => ({
       id: order.id,
-      productId: order.product.name,
-      unitPrice: order.product.price, // Adiciona o preço diretamente
-      quantity: order.quantity,
+      items: order.items.map(item => ({
+        productName: item.product.name,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+      })),
       totalPrice: order.totalPrice,
       status: order.status,
       createdAt: order.createdAt,
@@ -110,7 +136,11 @@ export class OrderService {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
-        product: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
 
@@ -121,12 +151,14 @@ export class OrderService {
     // Retorna a ordem com o preço unitário diretamente
     return {
       id: order.id,
-      productId: order.product.name,
-      unitPrice: order.product.price, // Preço diretamente na ordem
-      quantity: order.quantity,
+      items: order.items.map(item => ({
+        productName: item.product.name,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+    })),
       totalPrice: order.totalPrice,
       status: order.status,
-      createdAt: order.createdAt,
+      createdAt: order.createdAt
     };
   }
 }
