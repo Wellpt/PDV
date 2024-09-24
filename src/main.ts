@@ -19,12 +19,14 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('api', app, document);
 
+  // const db = process.env.DATABASE_URL
   const port = process.env.PORT || 3000;
   await app.listen(3000);
 
   const prismaService = app.get(PrismaService);
   await prismaService.enableShutdownHooks(app);
 
+  console.log (`Banco de dados conectado com sucesso`)
   console.log(`Servidor rodando na porta ${port}`);
 }
 
