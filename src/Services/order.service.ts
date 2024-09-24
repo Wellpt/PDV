@@ -22,7 +22,7 @@ export class OrderService {
     //   });
 
       if (!product) {
-        throw new NotFoundException(`Produto com ID ${productInfo.productName} não encontrado.`);      
+        throw new NotFoundException(`Produto com nome ${productInfo.productName} não encontrado.`);      
     }
 
     totalPrice += product.price * productInfo.quantity;
