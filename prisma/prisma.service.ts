@@ -13,8 +13,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     })
   }
   async onModuleInit() {
+    try {
     await this.$connect(); // Conectar ao banco de dados quando o módulo for inicializado
+  } catch (error) {
+    console.error('Erro ao conectar ao banco de dados', error);
+    throw new Error('Erro ao conectar ao banco de dados. Verifique as configurações e tente novamente.');
   }
+}
 
   async enableShutdownHooks(app: INestApplication) {
     app.enableShutdownHooks();
