@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Logger, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Logger, Patch, UseGuards, Delete, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductService } from 'src/Services/product.service';
 import { Product } from '@prisma/client';
@@ -33,17 +33,37 @@ export class ProductController {
     @Get('name/:name')
     @UseGuards(JwtAuthGuard) // Prote
     @ApiOperation({ summary: 'Retorna um produto pelo ID (preciso mudar pra nome)'})
-    async getProductByName(@Param('name') name: string): Promise < Product > {
+    async getProductByName(@Param('name') name: string): Promise < Product | { message: string } > {
+        const product = await this.productService.getProductByName(name);
+
+        if (!product) {
+            return { message: 'Produto nao encontrado' };
+        }
         return this.productService.getProductByName(name);
     }
 
     @Get(':id')
     @UseGuards(JwtAuthGuard) // Prote
     @ApiOperation({ summary: 'Retorna um produto pelo ID (preciso mudar pra nome)'})
-    async getProductById(@Param('id') id: string): Promise < Product > {
+    async getProductById(@Param('id') id: string): Promise < Product | { message: string }> {
         const numericId = parseInt(id, 10); // Converte a string 'id' para número
-        return this.productService.getProductById(numericId);
+        const product = await this.productService.getProductById(numericId);
+
+        if (!product) {
+            return { message: 'Produto nao encontrado' };
+        }
+        return product;
+
     }
+
+    @Delete(':id')
+    @UseGuards(JwtAuthGuard) // Prote
+    @ApiOperation({ summary: 'Remove um produto do banco de dados'})
+    async deleteProductById(@Param('id', ParseIntPipe) id: number): Promise < {message: string} > {
+        await this.productService.deleteProductById(id)
+        return { message: `Produto com ID ${id} foi deletado com sucesso.` };        
+    }
+
     @Patch (':id')
     @UseGuards(JwtAuthGuard) // Proteção com JWT
     @ApiOperation({ summary: 'Atualiza um produto'}) // documentação com swagger
