@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotAcceptableException } from "@nestjs/common";
+import { ConflictException, Injectable, NotAcceptableException, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { Product } from "@prisma/client";
 
@@ -14,17 +14,30 @@ export class ProductService {
         return this.prisma.product.findMany();
     }
     async getProductById(id: number): Promise<Product | null> {
-        return this.prisma.product.findUnique({
-            where: {
-                id: id,
-            },
+        return await this.prisma.product.findUnique({
+            where: { id: id },
         });
     }
+    
 
     async getProductByName(name: string): Promise<Product> {
         return this.prisma.product.findFirst({
             where: { name: name },
         });
+    }
+
+    async deleteProductById(productId: number): Promise<Product> {
+        // Verifica se o produto existe antes de tentar deletar
+        const product = await this.prisma.product.findUnique({
+            where: { id: productId}
+        });
+        
+        if (!product) {
+            throw new NotFoundException (`Produto com ID ${productId} não encontrado`);
+        }
+        return this.prisma.product.delete({
+            where: { id: productId },
+        })
     }
 
     async updateProduct(id: number, updateData: { name?: string; price?: number; description?: string; stock?: number }): Promise<Product> {
