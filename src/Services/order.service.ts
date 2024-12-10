@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { Product, Order } from '@prisma/client';
 import * as dayjs from 'dayjs';
@@ -14,12 +14,6 @@ export class OrderService {
     // Verifica e calcula o preço total antes de criar o pedido
     const orderItems = await Promise.all(products.map(async (productInfo) => {
       const product = await this.prisma.product.findFirst({ where: { name: productInfo.productName } });
-
-    
-    // for (const productInfo of products) {
-    //   const product = await this.prisma.product.findFirst({ 
-    //     where: { name: productInfo.productName } 
-    //   });
 
       if (!product) {
         throw new NotFoundException(`Produto com nome ${productInfo.productName} não encontrado.`);      
@@ -160,5 +154,14 @@ export class OrderService {
       status: order.status,
       createdAt: order.createdAt
     };
+  }
+  async deleteOrder(id: number): Promise<void> {
+    try {
+      await this.prisma.order.delete({ where: { id } });
+      Logger.log(`Pedido com ID ${id} foi deletado do banco de dados`);
+    } catch (error) {
+      Logger.error('Erro ao deletar pedido', error.message);
+      throw new Error('Erro ao deletar pedido.');
+    }
   }
 }

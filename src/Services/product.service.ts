@@ -27,7 +27,6 @@ export class ProductService {
     }
 
     async deleteProductById(productId: number): Promise<Product> {
-        // Verifica se o produto existe antes de tentar deletar
         const product = await this.prisma.product.findUnique({
             where: { id: productId}
         });
