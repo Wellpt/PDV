@@ -1,4 +1,4 @@
-import { UseGuards, Controller, Get, Post, Body, Param, Logger, Query } from '@nestjs/common';
+import { UseGuards, Controller, Get, Post, Body, Param, Delete, Logger, Query } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { OrderService } from 'src/Services/order.service';
@@ -57,6 +57,20 @@ export class OrderController {
     } catch (error) {
       Logger.error('Erro ao buscar pedido pelo ID', error.message);
       throw new Error('Erro ao buscar pedido pelo ID.');
+    }
+  }
+  @UseGuards(JwtAuthGuard) // Protegendo com JWT
+  @Delete(':id')
+  @ApiOperation({ summary: 'Deleta um pedido pelo ID'})
+  async deleteOrder(@Param('id') id: string): Promise<{ message: string }> {
+    try {
+      const numericId = parseInt(id, 10); 
+      await this.orderService.deleteOrder(numericId);
+      Logger.log(`Pedido com ID ${numericId} deletado com sucesso.`);
+      return { message: `Pedido com ID ${numericId} deletado com sucesso.` };
+    }catch (error) {
+      Logger.error('Erro ao deletar pedido', error.message);
+      throw new Error ('Erro ao deletar pedido.');
     }
   }
 }
