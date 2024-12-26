@@ -13,7 +13,7 @@ export class OrderController {
   @Post()
   @ApiOperation({ summary: 'Cria um novo pedido' })
   async createOrder(
-    @Body() body: { products: { productName: string, quantity: number }[], status: string } 
+    @Body() body: { products: { productId: number, quantity: number }[], status: string } 
   ): Promise<{ message: string }> {
     try {
 

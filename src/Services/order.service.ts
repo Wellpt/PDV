@@ -8,15 +8,15 @@ export class OrderService {
   constructor(private readonly prisma: PrismaService) {}
 
   // Método para criar o pedido com múltiplos itens e atualizar o estoque
-  async createOrder(products: { productName: string, quantity: number }[], status: string): Promise<{ totalPrice: number, status: string }> {
+  async createOrder(products: { productId: number, quantity: number }[], status: string): Promise<{ totalPrice: number, status: string }> {
     let totalPrice = 0;
 
     // Verifica e calcula o preço total antes de criar o pedido
     const orderItems = await Promise.all(products.map(async (productInfo) => {
-      const product = await this.prisma.product.findFirst({ where: { name: productInfo.productName } });
+      const product = await this.prisma.product.findFirst({ where: { id: productInfo.productId } });
 
       if (!product) {
-        throw new NotFoundException(`Produto com nome ${productInfo.productName} não encontrado.`);      
+        throw new NotFoundException(`Produto com nome ${productInfo.productId} não encontrado.`);      
     }
 
     totalPrice += product.price * productInfo.quantity;
