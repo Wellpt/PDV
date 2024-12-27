@@ -64,11 +64,17 @@ export class OrderService {
 
   // Método para obter pedidos e o balanço total
   async getOrders(
+    status?: 'CONCLUIDO' | 'PENDENTE',
     dataInicio?: string,
     dataFinal?: string,
     periodo?: 'dia' | 'semana' | 'mes'
   ): Promise<{ orders: any[], totalBalance: number }> {
-    // Se o 'period' for fornecido, definir startDate e endDate automaticamente
+    const filters: any = {};
+
+    if (status) {
+      filters.status = status;
+    }
+
     if (periodo) {
       const today = dayjs();
 
@@ -89,13 +95,13 @@ export class OrderService {
     }
 
     // filtrar os pedidos com base no intervalo de datas, se fornecido
-    const filters: any = {};
     if (dataInicio && dataFinal) {
       filters.createdAt = {
         gte: new Date(dataInicio),
-        lte: new Date(dataFinal)
+        lte: new Date(dataFinal),
       };
     }
+    
     const orders = await this.prisma.order.findMany({
       where: filters,
       include: {
