@@ -35,12 +35,13 @@ export class OrderController {
   @Get()
   @ApiOperation({ summary: 'Retorna todos os pedidos ou filtrado por período, dia, semana ou mês.' })
   async getOrders(
+    @Query('status') status?: 'CONCLUIDO' | 'PENDENTE',
     @Query('dataInicio') dataInicio?: string,
     @Query('dataFinal') dataFinal?: string,
     @Query('periodo') periodo?: 'dia' | 'semana' | 'mes'
   ): Promise<{ orders: Order[], totalBalance: number }> {
     try {
-      return await this.orderService.getOrders(dataInicio, dataFinal, periodo);
+      return await this.orderService.getOrders(status,dataInicio, dataFinal, periodo);
     } catch (error) {
       Logger.error('Erro ao buscar pedidos', error.message);
       throw new Error('Erro ao buscar pedidos.');
